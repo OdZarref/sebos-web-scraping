@@ -1,12 +1,13 @@
 import os
 import requests
 import telepot
+from sys import argv
 from datetime import datetime
 from bancodedados import *
 from random import randint
 from time import sleep
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
+from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException, TimeoutException
 from selenium.webdriver.common.by import By
 from tokens import *
 
@@ -16,7 +17,6 @@ class DownloadImage():
 
     def download(self, url, path=''):
         if url:
-            print(url)
             if 'guiadosquadrinhos' in url:
                     nomeNaoTratado = url.split('=')[-1].replace('/', '')
                     nome = ''
@@ -42,14 +42,14 @@ class Driver():
 
     def acessMessiasPages(self) -> None:
         db = BancoDeDadosMessias()
-        links = db.cur.execute('SELECT link FROM sebo_messias').fetchall()
+        columns = db.cur.execute('SELECT link, checado FROM sebo_messias').fetchall()
 
-        for link in links:
-            self.scrapMessiasPage(link[0])
+        for column in columns:
+            if column[1] == '0': self.scrapMessiasPage(column[0])
 
     def scrapMessiasPage(self, link):
         db = BancoDeDadosMessias()
-        district = db.cur.execute(f'SELECT distrito FROM sebo_messias WHERE link="{link}"')
+        district = db.cur.execute(f'SELECT distrito FROM sebo_messias WHERE link="{link}"').fetchone()[0]
         bot = telepot.Bot(TELEGRAM_TOKEN)
         livroTrackers = []#['susan sontag', 'craig thompson', 'isaac asimov', 'emily bront', 'george orwell', 'lewis carroll', 'h.g wells', 'saramago', 'frank herbert', 'verne', 'heinlein', 'kafka', 'darkside', 'nanquim', 'schopenheuer', 'bene barnosa', 'paulo coelho', 'cortela', 'kahneman', 'john milton', 'robert c', 'simon sinek', 'mitnick', 'alan lightman', 'feynman', 'philip k', 'ray bradbury', 'stephen hawking', 'carl sagan', 'david seltzer', 'bram stoker', 'lovecraft', 'edgar allan poe', 'mary shelley', 'ludvig von mises', 'milton friedman', 'bastiat', 'homero', 'john milton', 'johann wolfgang von', 'douglas adams', 'neil gaiman', 'bernard cornwell', 'anthony burgess', 'chuck palahniuk', 'pierre boulle', 'arthur c. clarke', 'richard dawkins', 'agatha christie', 'orleans', 'richard adams', 'stephen king']
         hqTrackers = ['dura', 'maus', 'habibi']
@@ -148,19 +148,43 @@ class Driver():
             if curiosidades == '':
                 curiosidades = 'Null'
         except NoSuchElementException: curiosidades = 'Null'
-
+        
+        checado = '1'
         if 'vendido' in self.browser.find_element(By.CSS_SELECTOR, '[id*="divCardBuy"]').text: status = 'Vendido'
         else: status = 'À venda'
-        dados = (titulo, link, capaLocal, district, categoria, autor, editora, ano, conservacaoCapa, conservacaoMiolo, isbn, acabamento, tradutor, idioma, edicao, numeroPaginas, formato, preco, precoDesconto, status, curiosidades, link)
+        dados = (titulo,
+                 link,
+                 capaLocal,
+                 district,
+                 categoria,
+                 autor,
+                 editora,
+                 ano,
+                 conservacaoCapa,
+                 conservacaoMiolo,
+                 isbn,
+                 acabamento,
+                 tradutor,
+                 idioma,
+                 edicao,
+                 numeroPaginas,
+                 formato,
+                 preco,
+                 precoDesconto,
+                 status,
+                 curiosidades,
+                 checado,
+                 link)
+        db.update(dados)                                   
+        db.con.close()
 
         if 'hq' in district.lower():
             for tracker in hqTrackers:
                 for dado in dados:
                     if tracker in dado.lower():
                         #bot.sendPhoto(CHAT_ID, photo=open(f'./images/{capaLocal}', 'rb'))
-                        mensagem = (f'Titulo: \nImagem Titulo: {capaLocal}\nURL: {link}\ndistrict: {district}\nCategoria: {categoria}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço Base: {preco}\nPreço com Desconto: {precoDesconto}\nStatus: {status}\ncuriosidades')
+                        mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nCategoria: {categoria}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço Base: {preco}\nPreço com Desconto: {precoDesconto}\nStatus: {status}\ncuriosidades\nURL: {link}')
                         bot.sendMessage(CHAT_ID, mensagem)
-                        print(mensagem)
         elif 'livro' in district.lower():
             for tracker in livroTrackers:
                 for dado in dados:
@@ -170,9 +194,6 @@ class Driver():
                         mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nCategoria: {categoria}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço Base: {preco}\nPreço com Desconto: {precoDesconto}\nStatus: {status}\ncuriosidades\nURL: {link}')
                         bot.sendMessage(CHAT_ID, mensagem)
                         #print(mensagem)
-
-        db.update(dados)                                   
-        db.con.close()
 
     def getMessiasPages(self, district):
         counter = 0
@@ -196,53 +217,57 @@ class Driver():
 
                 link = item.find_element(By.TAG_NAME, 'a').get_attribute('href')
                 data = datetime.now().isoformat()[0:-13]
-                print(price)
 
-                if columns:
+                if db.exists('link', link):
                     for column in columns:
                         if link in column[0]:
                             if float(price.replace(',', '.')) < float(column[18].replace(',', '.')):
-                                db.cur.execute(f"UPDATE sebo_messias SET precoDesconto='{price}' WHERE link='{link}'")
+                                db.cur.execute(f"""
+                                               UPDATE sebo_messias
+                                               SET precoDesconto='{price}'
+                                               WHERE link='{link}'
+                                               """)
                                 db.con.commit()
-                                db.con.close()
                                 print('Preço atualizado')
-                else:
+                elif not db.exists('link', link):
+                    checado = '0'
                     BancoDeDadosMessias().inserir((
-                        link,
-                        name,
-                        'Null',
-                        'Null',
-                        'Null',
-                        'Null',
-                        'Null',
-                        'Null',
-                        'Null',
-                        'Null',
-                        'Null',
-                        'Null',
-                        'Null',
-                        'Null',
-                        'Null',
-                        'Null',
-                        'Null',
-                        'Null',
-                        price,
-                        'Null',
-                        'Null',
-                        data
-                        ))
+                    link,
+                    name,
+                    'Null',
+                    district,
+                    'Null',
+                    'Null',
+                    'Null',
+                    'Null',
+                    'Null',
+                    'Null',
+                    'Null',
+                    'Null',
+                    'Null',
+                    'Null',
+                    'Null',
+                    'Null',
+                    'Null',
+                    'Null',
+                    price,
+                    'Null',
+                    'Null',
+                    data,
+                    checado
+                    ))
 
-            try:
-                if self.browser.find_elements(By.CLASS_NAME, 'page-link')[-1].text.lower() == 'next' or self.browser.find_elements(By.CLASS_NAME, 'page-link')[-1].text == '...':
-                    self.browser.find_elements(By.CLASS_NAME, 'page-link')[-1].click()
-                    counter += 1
-                    print(counter)
-                    sleep(1)
-            except:
-                print('End')
+            nextPageElement = self.browser.find_elements(By.CLASS_NAME, 'page-link')[-1]
+            if nextPageElement.text.lower() == 'next' or nextPageElement.text == '...'.lower():
+                nextPageElement.click()
+                counter += 1
+                sleep(1)
+            else:
+                print('fim')
                 break
 
-        db.close()
+
+        db.cur.close()
 
     def acessarGuiaDosQuadrinhosPages(self) -> None:
         bd = BancoDeDadosBasicoGDQ()
@@ -252,7 +277,7 @@ class Driver():
 
         for site in linksPai:
             #if site[0] in 'http://www.guiadosquadrinhos.com/capas/batman-1-serie/ba001102':
-            if site[0] in 'http://www.guiadosquadrinhos.com/capas/capitao-z-2-serie/ca001200':
+            if site[0] in 'http://www.guiadosquadrinhos.com/capas/cretinos-nao-mandam-flores-os/cr010100':
                 mandar = True
 
             print(site[0])
@@ -280,132 +305,134 @@ class Driver():
 
     def scrapGuiaDosQuadrinhosPage(self, linkPai='', link='', numeroDestaEdicao='', edicoesTotais='') -> None:
         while True:
-            self.browser.get(link)
-            self.showPrints = True
-            sleep(2)
             try:
-                titulo = self.browser.find_element(By.ID, 'nome_titulo_lb').text.strip().replace('\n', '')
-            except NoSuchElementException:
-                print('No Such Element "titulo"')
-                titulo = ''
-
-            try:
-                capa = self.browser.find_element(By.ID, 'ampliar_capa')
-                capaLink = capa.get_attribute('href')
-                if capa.get_attribute('title') == 'Capa já adicionada': capaLocal = ''
-                else:
-                    capaLocal = './capas_guia_dos_quadrinhos/' + capaLink.split('=')[-1]
-                    DownloadImage().download(capaLink, 'guiadosquadrinhos')
-            except NoSuchElementException:
+                self.browser.get(link)
+                self.showPrints = True
+                sleep(2)
                 try:
-                    capaIMG = self.browser.find_element(By.ID, 'cover').find_element(By.TAG_NAME, 'img')
-                    capaLink = self.browser.find_element(By.ID, 'cover').get_attribute('href')
-                    if not capaLink: capaLink = capaIMG.get_attribute('src')
-                    if not self.browser.find_elements(By.CSS_SELECTOR, '#sem_capa'):
-                        if capaIMG.get_attribute('title') == 'Capa já adicionada': capaLocal = ''
-                        else:
-                            capaLocal = './capas_guia_dos_quadrinhos/' + capaLink.split('=')[-1]
-                            DownloadImage().download(capaLink, 'guiadosquadrinhos')
-                    else:
-                        capaLocal = ''
+                    titulo = self.browser.find_element(By.ID, 'nome_titulo_lb').text.strip().replace('\n', '')
                 except NoSuchElementException:
-                    print('No Such Element "capaLink", "cover')
-                    capaLocal = ''
+                    print('No Such Element "titulo"')
+                    titulo = ''
 
-            try:
-                publicado = self.browser.find_element(By.ID, 'data_publi').text.strip().replace('\n', '')
-            except NoSuchElementException: 
-                print('No Such Element "publicado"')
-                publicado = ''
+                try:
+                    capa = self.browser.find_element(By.ID, 'ampliar_capa')
+                    capaLink = capa.get_attribute('href')
+                    if capa.get_attribute('title') == 'Capa já adicionada': capaLocal = ''
+                    else:
+                        capaLocal = './capas_guia_dos_quadrinhos/' + capaLink.split('=')[-1]
+                        DownloadImage().download(capaLink, 'guiadosquadrinhos')
+                except NoSuchElementException:
+                    try:
+                        capaIMG = self.browser.find_element(By.ID, 'cover').find_element(By.TAG_NAME, 'img')
+                        capaLink = self.browser.find_element(By.ID, 'cover').get_attribute('href')
+                        if not capaLink: capaLink = capaIMG.get_attribute('src')
+                        if not self.browser.find_elements(By.CSS_SELECTOR, '#sem_capa'):
+                            if capaIMG.get_attribute('title') == 'Capa já adicionada': capaLocal = ''
+                            else:
+                                capaLocal = './capas_guia_dos_quadrinhos/' + capaLink.split('=')[-1]
+                                DownloadImage().download(capaLink, 'guiadosquadrinhos')
+                        else:
+                            capaLocal = ''
+                    except NoSuchElementException:
+                        print('No Such Element "capaLink", "cover')
+                        capaLocal = ''
 
-            try:
-                editora = self.browser.find_element(By.ID, 'editora_link').text.strip().replace('\n', '')
-            except NoSuchElementException:
-                print('No Such Element "editora"')
-                editora = ''
+                try:
+                    publicado = self.browser.find_element(By.ID, 'data_publi').text.strip().replace('\n', '')
+                except NoSuchElementException: 
+                    print('No Such Element "publicado"')
+                    publicado = ''
 
-            try:
-                licenciador = self.browser.find_element(By.ID, 'licenciador').text.strip().replace('\n', '')
-            except NoSuchElementException:
-                print('No Such Element "licenciador"')
-                licenciador = ''
+                try:
+                    editora = self.browser.find_element(By.ID, 'editora_link').text.strip().replace('\n', '')
+                except NoSuchElementException:
+                    print('No Such Element "editora"')
+                    editora = ''
 
-            try:
-                categoria = self.browser.find_element(By.ID, 'categoria').text.strip().replace('\n', '')
-            except NoSuchElementException:
-                print('No Such Element "categoria"')
-                categoria = ''
+                try:
+                    licenciador = self.browser.find_element(By.ID, 'licenciador').text.strip().replace('\n', '')
+                except NoSuchElementException:
+                    print('No Such Element "licenciador"')
+                    licenciador = ''
 
-            try:
-                genero = self.browser.find_element(By.ID, 'genero').text.strip().replace('\n', '')
-            except NoSuchElementException:
-                print('No Such Element "genero"')
-                genero = ''
+                try:
+                    categoria = self.browser.find_element(By.ID, 'categoria').text.strip().replace('\n', '')
+                except NoSuchElementException:
+                    print('No Such Element "categoria"')
+                    categoria = ''
 
-            try:
-                status = self.browser.find_element(By.ID, 'status').text.strip().replace('\n', '')
-            except NoSuchElementException:
-                print('No Such Element "status"')
-                status = ''
+                try:
+                    genero = self.browser.find_element(By.ID, 'genero').text.strip().replace('\n', '')
+                except NoSuchElementException:
+                    print('No Such Element "genero"')
+                    genero = ''
 
-            try:
-                paginas = self.browser.find_element(By.ID, 'paginas').text.strip().replace('\n', '')
-            except NoSuchElementException:
-                print('No Such Element "paginas"')
-                paginas = ''
-        
-            try:
-                formato = self.browser.find_element(By.ID, 'formato').text.strip().replace('\n', '')
-            except NoSuchElementException:
-                print('No Such Element "formato"')
-                formato = ''
+                try:
+                    status = self.browser.find_element(By.ID, 'status').text.strip().replace('\n', '')
+                except NoSuchElementException:
+                    print('No Such Element "status"')
+                    status = ''
 
-            try:
-                preco = self.browser.find_element(By.ID, 'preco').text.strip().replace('\n', '')
-            except NoSuchElementException:
-                print('No Such Element "preco"')
-                preco = ''
+                try:
+                    paginas = self.browser.find_element(By.ID, 'paginas').text.strip().replace('\n', '')
+                except NoSuchElementException:
+                    print('No Such Element "paginas"')
+                    paginas = ''
+            
+                try:
+                    formato = self.browser.find_element(By.ID, 'formato').text.strip().replace('\n', '')
+                except NoSuchElementException:
+                    print('No Such Element "formato"')
+                    formato = ''
 
-                #######################
+                try:
+                    preco = self.browser.find_element(By.ID, 'preco').text.strip().replace('\n', '')
+                except NoSuchElementException:
+                    print('No Such Element "preco"')
+                    preco = ''
 
-            try:
-                nota = self.browser.find_element(By.ID, 'Media_votos').text.strip().replace('\n', '')
-            except NoSuchElementException:
-                print('No Such Element "nota"')
-                nota = ''
-            try:
-                totalVotosb = self.browser.find_element(By.ID, 'total_votos').text.strip().replace('\n', '')
-                totalVotos = ''
-                for letra in totalVotosb:
-                    if letra.isnumeric(): totalVotos += letra
-            except NoSuchElementException:
-                print('No Such Element "totalVotos"')
-                totalVotos = ''
+                    #######################
 
-            try:
-                posicaoMaisColecionadasb = self.browser.find_element(By.ID, 'box_colecao').text
-                posicaoMaisColecionadas = ''
-                for letra in posicaoMaisColecionadasb:
-                    if letra.isnumeric(): posicaoMaisColecionadas += letra
-            except NoSuchElementException:
-                print('No Such Element "posicaoMaisColecionadas"')
-                posicaoMaisColecionadas = ''
+                try:
+                    nota = self.browser.find_element(By.ID, 'Media_votos').text.strip().replace('\n', '')
+                except NoSuchElementException:
+                    print('No Such Element "nota"')
+                    nota = ''
+                try:
+                    totalVotosb = self.browser.find_element(By.ID, 'total_votos').text.strip().replace('\n', '')
+                    totalVotos = ''
+                    for letra in totalVotosb:
+                        if letra.isnumeric(): totalVotos += letra
+                except NoSuchElementException:
+                    print('No Such Element "totalVotos"')
+                    totalVotos = ''
 
-            try: capitulos = len(self.browser.find_elements(By.CLASS_NAME, 'historia'))
-            except NoSuchElementException:
-                print('No Such Element "capitulos"')
-                capitulos = ''
+                try:
+                    posicaoMaisColecionadasb = self.browser.find_element(By.ID, 'box_colecao').text
+                    posicaoMaisColecionadas = ''
+                    for letra in posicaoMaisColecionadasb:
+                        if letra.isnumeric(): posicaoMaisColecionadas += letra
+                except NoSuchElementException:
+                    print('No Such Element "posicaoMaisColecionadas"')
+                    posicaoMaisColecionadas = ''
 
-            try: textoDetalhes = self.browser.find_element(By.ID, 'texto_pag_detalhe').text
-            except NoSuchElementException:
-                print('No Such Element "textoDetalhes"')
-                textoDetalhes = ''
-            if self.showPrints: print(f'Titulo: {titulo}\nPublicado: {publicado}\nEditora: {editora}\nLicenciador: {licenciador}\nCategoria: {categoria}\nGenero: {genero}\nStatus: {status}\nPáginas: {paginas}\nFormato: {formato}\nPreço: {preco}\nNota: {nota}\nTotal Votos: {totalVotos}\nPosição Mais Colecionadas: {posicaoMaisColecionadas}\nCapitulos: {capitulos}')
+                try: capitulos = len(self.browser.find_elements(By.CLASS_NAME, 'historia'))
+                except NoSuchElementException:
+                    print('No Such Element "capitulos"')
+                    capitulos = ''
 
-            if titulo:
-                bd = BancoDeDadosGDQ()
-                bd.inserir((titulo, capaLocal, link, linkPai, publicado, editora, licenciador, categoria, genero, status, paginas, formato, preco, nota, totalVotos, posicaoMaisColecionadas, numeroDestaEdicao, edicoesTotais, capitulos, textoDetalhes))
-                break
+                try: textoDetalhes = self.browser.find_element(By.ID, 'texto_pag_detalhe').text
+                except NoSuchElementException:
+                    print('No Such Element "textoDetalhes"')
+                    textoDetalhes = ''
+                if self.showPrints: print(f'Titulo: {titulo}\nPublicado: {publicado}\nEditora: {editora}\nLicenciador: {licenciador}\nCategoria: {categoria}\nGenero: {genero}\nStatus: {status}\nPáginas: {paginas}\nFormato: {formato}\nPreço: {preco}\nNota: {nota}\nTotal Votos: {totalVotos}\nPosição Mais Colecionadas: {posicaoMaisColecionadas}\nCapitulos: {capitulos}')
+
+                if titulo:
+                    bd = BancoDeDadosGDQ()
+                    bd.inserir((titulo, capaLocal, link, linkPai, publicado, editora, licenciador, categoria, genero, status, paginas, formato, preco, nota, totalVotos, posicaoMaisColecionadas, numeroDestaEdicao, edicoesTotais, capitulos, textoDetalhes))
+                    break
+            except TimeoutException: pass
         
     def getGuiaDosQuadrinhosPages(self) -> None:
         site = 'http://www.guiadosquadrinhos.com/titulos/'
@@ -441,9 +468,12 @@ class Driver():
                 try: self.browser.find_elements(By.CLASS_NAME, 'next_last')[2].click()
                 except ElementNotInteractableException: break
 
+
 if __name__ == '__main__':
-    #Driver().acessarGuiaDosQuadrinhosPages()
-    # Driver().scrapGuiaDosQuadrinhosPage('http://www.guiadosquadrinhos.com/capas/100-balas/10012100', 'http://www.guiadosquadrinhos.com/edicao/ai-mocinho-9-serie-n-1/ai001900/54523', '30', '72')
-    #Driver().getMessiasPages('books')
-    # Driver().scrapMessiasPage('Livro')
-    Driver().acessMessiasPages()
+    if argv[1] == '-g':
+        Driver().acessarGuiaDosQuadrinhosPages()
+        # Driver().scrapGuiaDosQuadrinhosPage('http://www.guiadosquadrinhos.com/capas/100-balas/10012100', 'http://www.guiadosquadrinhos.com/edicao/ai-mocinho-9-serie-n-1/ai001900/54523', '30', '72')
+    elif argv[1] == '-s':
+        # Driver().getMessiasPages('HQ/Mangá')
+        #Driver().getMessiasPages('livro')
+        Driver().acessMessiasPages()
