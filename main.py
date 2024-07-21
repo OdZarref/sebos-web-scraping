@@ -30,7 +30,7 @@ class DownloadImage():
 
             elif 'messias' in url:
                 nome = url.split('/')[-1]
-                path = os.getcwd() + './images'
+                path = os.getcwd() + '/images'
                 if not os.path.exists(path): os.mkdir(path)
             else: nome = str(randint(10**8, 10**9-1)) + '.jpg'
             self.urllib.request.urlretrieve(url, path + '/' + nome )
@@ -64,7 +64,9 @@ class Driver():
             DownloadImage().download(capaURL, 'sebodomessias')
         except NoSuchElementException: capaLocal = 'Null'
 
-        try: titulo = self.browser.find_element(By.ID, 'ctl00_cphMain_labelTitulo').text
+        try:
+            titulo = self.browser.find_element(By.ID, 'ctl00_cphMain_labelTitulo').text
+            if not titulo: titulo = self.browser.find_element(By.ID, 'ctl00_cphMain_lblTitulo').text
         except NoSuchElementException: titulo = 'Null'
 
         try: categoria = self.browser.find_element(By.ID, 'ctl00_cphMain_labelCategoriaTitulo').find_element(By.TAG_NAME, 'a').text
@@ -395,15 +397,11 @@ class Driver():
                 except NoSuchElementException:
                     print('No Such Element "formato"')
                     formato = ''
-
                 try:
                     preco = self.browser.find_element(By.ID, 'preco').text.strip().replace('\n', '')
                 except NoSuchElementException:
                     print('No Such Element "preco"')
                     preco = ''
-
-                    #######################
-
                 try:
                     nota = self.browser.find_element(By.ID, 'Media_votos').text.strip().replace('\n', '')
                 except NoSuchElementException:
@@ -417,7 +415,6 @@ class Driver():
                 except NoSuchElementException:
                     print('No Such Element "totalVotos"')
                     totalVotos = ''
-
                 try:
                     posicaoMaisColecionadasb = self.browser.find_element(By.ID, 'box_colecao').text
                     posicaoMaisColecionadas = ''
@@ -426,12 +423,10 @@ class Driver():
                 except NoSuchElementException:
                     print('No Such Element "posicaoMaisColecionadas"')
                     posicaoMaisColecionadas = ''
-
                 try: capitulos = len(self.browser.find_elements(By.CLASS_NAME, 'historia'))
                 except NoSuchElementException:
                     print('No Such Element "capitulos"')
                     capitulos = ''
-
                 try: textoDetalhes = self.browser.find_element(By.ID, 'texto_pag_detalhe').text
                 except NoSuchElementException:
                     print('No Such Element "textoDetalhes"')
