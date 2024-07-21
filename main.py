@@ -39,6 +39,7 @@ class DownloadImage():
 class Driver():
     def __init__(self):
         if os.name == 'nt': self.browser = webdriver.Chrome()
+        else: self.browser = webdriver.Firefox()
 
     def acessMessiasPages(self) -> None:
         db = BancoDeDadosMessias()
@@ -51,11 +52,11 @@ class Driver():
         db = BancoDeDadosMessias()
         district = db.cur.execute(f'SELECT distrito FROM sebo_messias WHERE link="{link}"').fetchone()[0]
         bot = telepot.Bot(TELEGRAM_TOKEN)
-        livroTrackers = []#['susan sontag', 'craig thompson', 'isaac asimov', 'emily bront', 'george orwell', 'lewis carroll', 'h.g wells', 'saramago', 'frank herbert', 'verne', 'heinlein', 'kafka', 'darkside', 'nanquim', 'schopenheuer', 'bene barnosa', 'paulo coelho', 'cortela', 'kahneman', 'john milton', 'robert c', 'simon sinek', 'mitnick', 'alan lightman', 'feynman', 'philip k', 'ray bradbury', 'stephen hawking', 'carl sagan', 'david seltzer', 'bram stoker', 'lovecraft', 'edgar allan poe', 'mary shelley', 'ludvig von mises', 'milton friedman', 'bastiat', 'homero', 'john milton', 'johann wolfgang von', 'douglas adams', 'neil gaiman', 'bernard cornwell', 'anthony burgess', 'chuck palahniuk', 'pierre boulle', 'arthur c. clarke', 'richard dawkins', 'agatha christie', 'orleans', 'richard adams', 'stephen king']
+        livroTrackers = ['nanquim', 'darkside']#['susan sontag', 'craig thompson', 'isaac asimov', 'emily bront', 'george orwell', 'lewis carroll', 'h.g wells', 'saramago', 'frank herbert', 'verne', 'heinlein', 'kafka', 'darkside', 'nanquim', 'schopenheuer', 'bene barnosa', 'paulo coelho', 'cortela', 'kahneman', 'john milton', 'robert c', 'simon sinek', 'mitnick', 'alan lightman', 'feynman', 'philip k', 'ray bradbury', 'stephen hawking', 'carl sagan', 'david seltzer', 'bram stoker', 'lovecraft', 'edgar allan poe', 'mary shelley', 'ludvig von mises', 'milton friedman', 'bastiat', 'homero', 'john milton', 'johann wolfgang von', 'douglas adams', 'neil gaiman', 'bernard cornwell', 'anthony burgess', 'chuck palahniuk', 'pierre boulle', 'arthur c. clarke', 'richard dawkins', 'agatha christie', 'orleans', 'richard adams', 'stephen king']
         hqTrackers = ['dura', 'maus', 'habibi']
         self.browser.get(link)
         print('Acessando: ', link)
-        sleep(1)
+        sleep(0.5)
 
         try:
             capaURL = self.browser.find_element(By.ID, 'ctl00_cphMain_rptImage_ctl00_imgProduto').get_attribute('src')
@@ -182,8 +183,8 @@ class Driver():
             for tracker in hqTrackers:
                 for dado in dados:
                     if tracker in dado.lower():
-                        #bot.sendPhoto(CHAT_ID, photo=open(f'./images/{capaLocal}', 'rb'))
-                        mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nCategoria: {categoria}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço Base: {preco}\nPreço com Desconto: {precoDesconto}\nStatus: {status}\ncuriosidades\nURL: {link}')
+                        bot.sendPhoto(CHAT_ID, photo=open(f'./images/{capaLocal}', 'rb'))
+                        mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nCategoria: {categoria}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço Base: {preco}\nPreço com Desconto: {precoDesconto}\nStatus: {status}\nCuriosidades:{curiosidades}\nURL: {link}')
                         bot.sendMessage(CHAT_ID, mensagem)
         elif 'livro' in district.lower():
             for tracker in livroTrackers:
@@ -191,7 +192,7 @@ class Driver():
                     if tracker in dado.lower():
                         print(tracker, dado, dados)
                         #bot.sendPhoto(CHAT_ID, photo=open(f'./images/{capaLocal}', 'rb'))
-                        mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nCategoria: {categoria}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço Base: {preco}\nPreço com Desconto: {precoDesconto}\nStatus: {status}\ncuriosidades\nURL: {link}')
+                        mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nCategoria: {categoria}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço Base: {preco}\nPreço com Desconto: {precoDesconto}\nStatus: {status}\nCuriosidades:{curiosidades}\nURL: {link}')
                         bot.sendMessage(CHAT_ID, mensagem)
                         #print(mensagem)
 
@@ -202,7 +203,7 @@ class Driver():
         db = BancoDeDadosMessias()
         res = db.cur.execute("SELECT * FROM sebo_messias")
         columns = res.fetchall()
-        sleep(1)
+        sleep(0.5)
 
         while True:
             itens = self.browser.find_elements(By.CLASS_NAME, 'card-news')
@@ -221,14 +222,18 @@ class Driver():
                 if db.exists('link', link):
                     for column in columns:
                         if link in column[0]:
-                            if float(price.replace(',', '.')) < float(column[18].replace(',', '.')):
-                                db.cur.execute(f"""
-                                               UPDATE sebo_messias
-                                               SET precoDesconto='{price}'
-                                               WHERE link='{link}'
-                                               """)
-                                db.con.commit()
-                                print('Preço atualizado')
+                            if not column[18]:
+                                if float(price.replace(',', '.')) < float(column[18].replace('.', '').replace('R$ ', '').replace(',', '.')):
+                                    db.cur.execute(f"""
+                                                UPDATE sebo_messias
+                                                SET precoDesconto='R$ {price}'
+                                                WHERE link='{link}'
+                                                """)
+                                    db.con.commit()
+                                    print(f"""
+                                        Preço Atualizado: {name}
+                                        Antigo: {column[18]}
+                                        Novo: {price}""")
                 elif not db.exists('link', link):
                     checado = '0'
                     BancoDeDadosMessias().inserir((
@@ -257,12 +262,17 @@ class Driver():
                     checado
                     ))
 
-            nextPageElement = self.browser.find_elements(By.CLASS_NAME, 'page-link')[-1]
-            if nextPageElement.text.lower() == 'next' or nextPageElement.text == '...'.lower():
+            try:
+                nextPageElement = self.browser.find_elements(By.CLASS_NAME, 'page-link')[-1]
+                previousURL = self.browser.current_url
                 nextPageElement.click()
                 counter += 1
-                sleep(1)
-            else:
+                sleep(0.5)
+
+                if previousURL == self.browser.current_url:
+                    break
+                
+            except IndexError:
                 print('fim')
                 break
 
@@ -474,6 +484,6 @@ if __name__ == '__main__':
         Driver().acessarGuiaDosQuadrinhosPages()
         # Driver().scrapGuiaDosQuadrinhosPage('http://www.guiadosquadrinhos.com/capas/100-balas/10012100', 'http://www.guiadosquadrinhos.com/edicao/ai-mocinho-9-serie-n-1/ai001900/54523', '30', '72')
     elif argv[1] == '-s':
-        # Driver().getMessiasPages('HQ/Mangá')
-        #Driver().getMessiasPages('livro')
+        Driver().getMessiasPages('HQ/Mangá')
+        Driver().getMessiasPages('livro')
         Driver().acessMessiasPages()
