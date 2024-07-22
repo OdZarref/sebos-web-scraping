@@ -11,6 +11,22 @@ from selenium.common.exceptions import NoSuchElementException, ElementNotInterac
 from selenium.webdriver.common.by import By
 from tokens import *
 
+class UtilsFunctions:
+    def getStrTime() -> str:
+        return datetime.now().isoformat()[0:-13]
+
+    def randintID() -> str:
+        return str(randint(10 ** 8, 10 ** 9))
+
+class TelegramBot:
+    def __init__(self) -> None:
+        self.bot = telepot.Bot(TELEGRAM_TOKEN)
+
+    def sendMessage(self, mensagem) -> None:
+        self.bot.sendMessage(CHAT_ID, mensagem)
+
+    def sendPhoto(self, imagemLocal) -> None:
+        self.bot.sendPhoto(CHAT_ID, photo=open(f'./images/{imagemLocal}', 'rb'))
 
 class DownloadImage():
     import urllib.request
@@ -48,10 +64,11 @@ class Driver():
         for column in columns:
             if column[1] == '0': self.scrapMessiasPage(column[0])
 
+        self.browser.quit()
+
     def scrapMessiasPage(self, link):
         db = BancoDeDadosMessias()
         district = db.cur.execute(f'SELECT distrito FROM sebo_messias WHERE link="{link}"').fetchone()[0]
-        bot = telepot.Bot(TELEGRAM_TOKEN)
         livroTrackers = ['nanquim', 'darkside']#['susan sontag', 'craig thompson', 'isaac asimov', 'emily bront', 'george orwell', 'lewis carroll', 'h.g wells', 'saramago', 'frank herbert', 'verne', 'heinlein', 'kafka', 'darkside', 'nanquim', 'schopenheuer', 'bene barnosa', 'paulo coelho', 'cortela', 'kahneman', 'john milton', 'robert c', 'simon sinek', 'mitnick', 'alan lightman', 'feynman', 'philip k', 'ray bradbury', 'stephen hawking', 'carl sagan', 'david seltzer', 'bram stoker', 'lovecraft', 'edgar allan poe', 'mary shelley', 'ludvig von mises', 'milton friedman', 'bastiat', 'homero', 'john milton', 'johann wolfgang von', 'douglas adams', 'neil gaiman', 'bernard cornwell', 'anthony burgess', 'chuck palahniuk', 'pierre boulle', 'arthur c. clarke', 'richard dawkins', 'agatha christie', 'orleans', 'richard adams', 'stephen king']
         hqTrackers = ['dura', 'maus', 'habibi']
         self.browser.get(link)
@@ -69,7 +86,9 @@ class Driver():
             if not titulo: titulo = self.browser.find_element(By.ID, 'ctl00_cphMain_lblTitulo').text
         except NoSuchElementException: titulo = 'Null'
 
-        try: categoria = self.browser.find_element(By.ID, 'ctl00_cphMain_labelCategoriaTitulo').find_element(By.TAG_NAME, 'a').text
+        try:
+            assunto = self.browser.find_element(By.ID, 'ctl00_cphMain_labelCategoriaTitulo').find_element(By.TAG_NAME, 'a').text
+            if not assunto: assunto = self.browser.find_element(By.ID, 'ctl00_cphMain_lblCategoriaTitulo').find_element(By.TAG_NAME, 'a').text
         except NoSuchElementException: categoria = 'Null'
         
         try:
@@ -137,14 +156,6 @@ class Driver():
             precoDesconto = self.browser.find_element(By.CSS_SELECTOR, '[id*="lblPrecoDesconto"]').text
             if not precoDesconto: precoDesconto = 'Null'
         except NoSuchElementException: precoDesconto = 'Null'
-        
-        try: 
-            precoNaoTratado = self.browser.find_element(By.CSS_SELECTOR, '[id*="lblPreco"]').text
-            preco = ''
-            for letra in precoNaoTratado:
-                if letra.isnumeric() or letra == ',': preco += letra
-            preco = 'R$ ' + preco
-        except NoSuchElementException: preco = 'Null'
 
         try:
             curiosidades = self.browser.find_element(By.CSS_SELECTOR, '[id*="pnlCuriosidade"]').text.replace('Curiosidades: ', '')
@@ -155,27 +166,32 @@ class Driver():
         checado = '1'
         if 'vendido' in self.browser.find_element(By.CSS_SELECTOR, '[id*="divCardBuy"]').text: status = 'Vendido'
         else: status = 'À venda'
+        menorPreco = precoDesconto
+        ultimoUpdate = UtilsFunctions.getStrTime()
+        varId = UtilsFunctions.randintID()
         dados = (titulo,
-                 link,
-                 capaLocal,
+                 varId,
                  district,
-                 categoria,
+                 assunto,
                  autor,
+                 tradutor,
                  editora,
                  ano,
                  conservacaoCapa,
                  conservacaoMiolo,
-                 isbn,
                  acabamento,
-                 tradutor,
+                 precoDesconto,
+                 menorPreco,
                  idioma,
                  edicao,
                  numeroPaginas,
                  formato,
-                 preco,
-                 precoDesconto,
                  status,
                  curiosidades,
+                 ultimoUpdate,
+                 isbn,
+                 capaLocal,
+                 link,
                  checado,
                  link)
         db.update(dados)                                   
@@ -185,26 +201,22 @@ class Driver():
             for tracker in hqTrackers:
                 for dado in dados:
                     if tracker in dado.lower():
-                        bot.sendPhoto(CHAT_ID, photo=open(f'./images/{capaLocal}', 'rb'))
-                        mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nCategoria: {categoria}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço Base: {preco}\nPreço com Desconto: {precoDesconto}\nStatus: {status}\nCuriosidades:{curiosidades}\nURL: {link}')
-                        bot.sendMessage(CHAT_ID, mensagem)
+                        mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nAssunto: {assunto}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço: {precoDesconto}\nStatus: {status}\nCuriosidades:{curiosidades}\nURL: {link}')
+                        TelegramBot().sendMessage(mensagem)
+                        TelegramBot().sendPhoto(capaLocal)
         elif 'livro' in district.lower():
             for tracker in livroTrackers:
                 for dado in dados:
                     if tracker in dado.lower():
                         print(tracker, dado, dados)
-                        #bot.sendPhoto(CHAT_ID, photo=open(f'./images/{capaLocal}', 'rb'))
-                        mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nCategoria: {categoria}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço Base: {preco}\nPreço com Desconto: {precoDesconto}\nStatus: {status}\nCuriosidades:{curiosidades}\nURL: {link}')
-                        bot.sendMessage(CHAT_ID, mensagem)
-                        #print(mensagem)
+                        mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nAssunto: {assunto}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço: {precoDesconto}\nStatus: {status}\nCuriosidades:{curiosidades}\nURL: {link}')
+                        TelegramBot().sendMessage(mensagem)
 
     def getMessiasPages(self, district):
         counter = 0
         if district == 'livro': self.browser.get('https://sebodomessias.com.br/livros')
         elif district == 'HQ/Mangá': self.browser.get('https://sebodomessias.com.br/gibis')
         db = BancoDeDadosMessias()
-        res = db.cur.execute("SELECT * FROM sebo_messias")
-        columns = res.fetchall()
         sleep(0.5)
 
         while True:
@@ -212,58 +224,61 @@ class Driver():
 
             for item in itens:
                 name = item.find_element(By.CLASS_NAME, 'product-title').text.strip().replace('\n', '')
-                pricePlaceHolder = item.find_element(By.CLASS_NAME, 'price-new').text.strip().replace('\n', '')
-                price = ''
-
-                for letter in pricePlaceHolder:
-                    if letter.isnumeric() or letter == ',': price += letter
+                price = item.find_element(By.CLASS_NAME, 'price-new').text.strip().replace('\n', '')
 
                 link = item.find_element(By.TAG_NAME, 'a').get_attribute('href')
-                data = datetime.now().isoformat()[0:-13]
+                data = UtilsFunctions.getStrTime()
 
                 if db.exists('link', link):
-                    for column in columns:
-                        if link in column[0]:
-                            if not column[18]:
-                                if float(price.replace(',', '.')) < float(column[18].replace('.', '').replace('R$ ', '').replace(',', '.')):
-                                    db.cur.execute(f"""
-                                                UPDATE sebo_messias
-                                                SET precoDesconto='R$ {price}'
-                                                WHERE link='{link}'
-                                                """)
-                                    db.con.commit()
-                                    print(f"""
-                                        Preço Atualizado: {name}
-                                        Antigo: {column[18]}
-                                        Novo: {price}""")
+                    res = db.cur.execute(f"SELECT preco from sebo_messias WHERE link='{link}'")
+                    priceDB = res.fetchone()[0]
+                    res = db.cur.execute(f"SELECT menorPreco from sebo_messias WHERE link='{link}'")
+                    lowestPrice = res.fetchone()[0].replace('.', '').replace('R$ ', '').replace(',', '.')
+
+                    if price != priceDB:
+                        db.cur.execute(f"""
+                                    UPDATE sebo_messias
+                                    SET preco='R$ {price}'
+                                    WHERE link='{link}'
+                                    """)
+                        print(f'Preço Atualizado: {name}\nAntigo: {priceDB}\nNovo: {price}')
+
+                    if float(price.replace('.', '').replace('R$ ', '').replace(',', '.')) < float(lowestPrice):
+                        db.cur.execute(f"""
+                                    UPDATE sebo_messias
+                                    SET menorPreco='R$ {price}'
+                                    WHERE link='{link}'
+                                    """)
+                    db.con.commit()
+
                 elif not db.exists('link', link):
                     checado = '0'
+                    varID = UtilsFunctions.randintID()
                     BancoDeDadosMessias().inserir((
-                    link,
-                    name,
-                    'Null',
-                    district,
-                    'Null',
-                    'Null',
-                    'Null',
-                    'Null',
-                    'Null',
-                    'Null',
-                    'Null',
-                    'Null',
-                    'Null',
-                    'Null',
-                    'Null',
-                    'Null',
-                    'Null',
-                    'Null',
-                    price,
-                    'Null',
-                    'Null',
-                    data,
-                    checado
-                    ))
-
+                                                 name,
+                                                 varID,
+                                                 district,
+                                                 'null',
+                                                 'null',
+                                                 'null',
+                                                 'null',
+                                                 'null',
+                                                 'null',
+                                                 'null',
+                                                 'null',
+                                                 price,
+                                                 price,
+                                                 'null',
+                                                 'null',
+                                                 'null',
+                                                 'null',
+                                                 'null',
+                                                 'null',
+                                                 data,
+                                                 'null',
+                                                 'null',
+                                                 link,
+                                                 checado))
             try:
                 nextPageElement = self.browser.find_elements(By.CLASS_NAME, 'page-link')[-1]
                 previousURL = self.browser.current_url
@@ -278,7 +293,7 @@ class Driver():
                 print('fim')
                 break
 
-
+        self.browser.quit()
         db.cur.close()
 
     def acessarGuiaDosQuadrinhosPages(self) -> None:
@@ -288,16 +303,14 @@ class Driver():
         mandar = False
 
         for site in linksPai:
-            #if site[0] in 'http://www.guiadosquadrinhos.com/capas/batman-1-serie/ba001102':
-            if site[0] in 'http://www.guiadosquadrinhos.com/capas/cretinos-nao-mandam-flores-os/cr010100':
-                mandar = True
+            if site[0] in 'http://www.guiadosquadrinhos.com/capas/a3-quadrinhos/a3333100': mandar = True
 
-            print(site[0])
             if mandar:
                 while True:
                     numeroDestaEdicao = 0
                     self.browser.get(site[0])
-                    sleep(2)
+                    sleep(0.5)
+
                     try: 
                         self.browser.find_element(By.ID, 'error-information-popup-content')
                     except NoSuchElementException:
@@ -309,9 +322,7 @@ class Driver():
                         for link in self.browser.find_elements(By.CLASS_NAME, 'suppress'): links.append(link.get_attribute('href'))
                         for link in links:
                             numeroDestaEdicao += 1
-
-                            print(site)
-                            print('======================================================================================================================================================\n', site[0])
+                            print('===========================================================\n', site[0])
                             self.scrapGuiaDosQuadrinhosPage(site[0], link, numeroDestaEdicao, site[5])
                         break
 
@@ -320,7 +331,7 @@ class Driver():
             try:
                 self.browser.get(link)
                 self.showPrints = True
-                sleep(2)
+                sleep(0.5)
                 try:
                     titulo = self.browser.find_element(By.ID, 'nome_titulo_lb').text.strip().replace('\n', '')
                 except NoSuchElementException:
@@ -477,7 +488,6 @@ class Driver():
 if __name__ == '__main__':
     if argv[1] == '-g':
         Driver().acessarGuiaDosQuadrinhosPages()
-        # Driver().scrapGuiaDosQuadrinhosPage('http://www.guiadosquadrinhos.com/capas/100-balas/10012100', 'http://www.guiadosquadrinhos.com/edicao/ai-mocinho-9-serie-n-1/ai001900/54523', '30', '72')
     elif argv[1] == '-s':
         Driver().getMessiasPages('HQ/Mangá')
         Driver().getMessiasPages('livro')
