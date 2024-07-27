@@ -202,14 +202,15 @@ class Driver():
                 for dado in dados:
                     if tracker in dado.lower():
                         mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nAssunto: {assunto}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço: {precoDesconto}\nStatus: {status}\nCuriosidades:{curiosidades}\nURL: {link}')
-                        TelegramBot().sendMessage(mensagem)
                         TelegramBot().sendPhoto(capaLocal)
+                        TelegramBot().sendMessage(mensagem)
         elif 'livro' in district.lower():
             for tracker in livroTrackers:
                 for dado in dados:
                     if tracker in dado.lower():
                         print(tracker, dado, dados)
                         mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nAssunto: {assunto}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço: {precoDesconto}\nStatus: {status}\nCuriosidades:{curiosidades}\nURL: {link}')
+                        TelegramBot().sendPhoto(capaLocal)
                         TelegramBot().sendMessage(mensagem)
 
     def getMessiasPages(self, district):
@@ -237,18 +238,19 @@ class Driver():
 
                     if price != priceDB:
                         db.cur.execute(f"""
-                                    UPDATE sebo_messias
-                                    SET preco='R$ {price}'
-                                    WHERE link='{link}'
-                                    """)
+                                        UPDATE sebo_messias
+                                        SET preco='R$ {price}'
+                                        WHERE link='{link}'
+                                        """)
                         print(f'Preço Atualizado: {name}\nAntigo: {priceDB}\nNovo: {price}')
 
-                    if float(price.replace('.', '').replace('R$ ', '').replace(',', '.')) < float(lowestPrice):
-                        db.cur.execute(f"""
-                                    UPDATE sebo_messias
-                                    SET menorPreco='R$ {price}'
-                                    WHERE link='{link}'
-                                    """)
+                    if not 'Null' in priceDB and not 'Null' in lowestPrice:
+                            if float(price.replace('.', '').replace('R$ ', '').replace(',', '.')) < float(lowestPrice):
+                                db.cur.execute(f"""
+                                                UPDATE sebo_messias
+                                                SET menorPreco='R$ {price}'
+                                                WHERE link='{link}'
+                                                """)
                     db.con.commit()
 
                 elif not db.exists('link', link):
@@ -303,7 +305,7 @@ class Driver():
         mandar = False
 
         for site in linksPai:
-            if site[0] in 'http://www.guiadosquadrinhos.com/capas/a3-quadrinhos/a3333100': mandar = True
+            if site[0] in 'http://www.guiadosquadrinhos.com/capas/minnie-1-serie/mi003100': mandar = True
 
             if mandar:
                 while True:
