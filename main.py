@@ -305,7 +305,7 @@ class Driver():
         mandar = False
 
         for site in linksPai:
-            if site[0] in 'http://www.guiadosquadrinhos.com/capas/minnie-1-serie/mi003100': mandar = True
+            if site[0] in 'http://www.guiadosquadrinhos.com/capas/thor-3-serie/th011134': mandar = True
 
             if mandar:
                 while True:
@@ -488,9 +488,13 @@ class Driver():
 
 
 if __name__ == '__main__':
-    if argv[1] == '-g':
-        Driver().acessarGuiaDosQuadrinhosPages()
-    elif argv[1] == '-s':
-        Driver().getMessiasPages('HQ/Mangá')
-        Driver().getMessiasPages('livro')
-        Driver().acessMessiasPages()
+    while True:
+        if argv[1] == '-g':
+            Driver().acessarGuiaDosQuadrinhosPages()
+        elif argv[1] == '-s':
+            Driver().getMessiasPages('HQ/Mangá')
+            Driver().getMessiasPages('livro')
+            Driver().acessMessiasPages()
+
+            if argv[2] == '-wt': noStop = True
+            else: break
