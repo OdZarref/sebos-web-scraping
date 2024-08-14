@@ -1,6 +1,7 @@
 import os
 import requests
 import telepot
+import sqlite3
 from sys import argv
 from datetime import datetime
 from bancodedados import *
@@ -18,6 +19,7 @@ class UtilsFunctions:
     def randintID() -> str:
         return str(randint(10 ** 8, 10 ** 9))
 
+
 class TelegramBot:
     def __init__(self) -> None:
         self.bot = telepot.Bot(TELEGRAM_TOKEN)
@@ -27,6 +29,7 @@ class TelegramBot:
 
     def sendPhoto(self, imagemLocal) -> None:
         self.bot.sendPhoto(CHAT_ID, photo=open(f'./images/{imagemLocal}', 'rb'))
+
 
 class DownloadImage():
     import urllib.request
@@ -54,7 +57,7 @@ class DownloadImage():
 
 class Driver():
     def __init__(self):
-        if os.name == 'nt': self.browser = webdriver.Chrome()
+        if os.name == 'nt': self.browser = webdriver.Firefox()
         else: self.browser = webdriver.Firefox()
 
     def acessMessiasPages(self) -> None:
@@ -487,6 +490,18 @@ class Driver():
                 except ElementNotInteractableException: break
 
 
+# def test() -> None:
+#     messiasDB = BancoDeDadosMessias()
+    
+#     columns = messiasDB.cur.execute("""
+#                                     SELECT
+#                                         * FROM sebo_messias
+#                                     WHERE
+#                                         titulo LIKE 'Crimson%' AND distrito='HQ/Mangá' AND ano='2002'""").fetchall()
+
+#     # for column in columns:
+#     print(columns)
+
 if __name__ == '__main__':
     while True:
         if argv[1] == '-g':
@@ -495,6 +510,3 @@ if __name__ == '__main__':
             Driver().getMessiasPages('HQ/Mangá')
             Driver().getMessiasPages('livro')
             Driver().acessMessiasPages()
-
-            if argv[2] == '-wt': noStop = True
-            else: break
