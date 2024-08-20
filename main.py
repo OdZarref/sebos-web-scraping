@@ -2,6 +2,7 @@ import os
 import requests
 import telepot
 import sqlite3
+import schedule
 from sys import argv
 from datetime import datetime
 from bancodedados import *
@@ -489,7 +490,27 @@ class Driver():
                 try: self.browser.find_elements(By.CLASS_NAME, 'next_last')[2].click()
                 except ElementNotInteractableException: break
 
+    def updateSeboMessiasNews(self) -> None:
+        pass
 
+
+
+def main() -> None:
+    global getAllPages
+
+    try:
+        if argv[1] == '-g':
+            Driver().acessarGuiaDosQuadrinhosPages()
+        elif argv[1] == '-s':
+            if getAllPages:
+                Driver().getMessiasPages('HQ/Mangá')
+                Driver().getMessiasPages('livro')
+                Driver().acessMessiasPages()
+                getAllPages = False
+            elif not getAllPages:
+                Driver().updateSeboMessiasNews()
+    except:
+        pass
 # def test() -> None:
 #     messiasDB = BancoDeDadosMessias()
     
@@ -503,10 +524,8 @@ class Driver():
 #     print(columns)
 
 if __name__ == '__main__':
+    schedule.every(2).hours.do(main)
+    getAllPages = True
+
     while True:
-        if argv[1] == '-g':
-            Driver().acessarGuiaDosQuadrinhosPages()
-        elif argv[1] == '-s':
-            Driver().getMessiasPages('HQ/Mangá')
-            Driver().getMessiasPages('livro')
-            Driver().acessMessiasPages()
+        schedule.run_pending()
