@@ -34,26 +34,32 @@ class TelegramBot:
 
 class DownloadImage():
     import urllib.request
+    from urllib.error import URLError
 
     def download(self, url, path=''):
         if url:
-            if 'guiadosquadrinhos' in url:
-                    nomeNaoTratado = url.split('=')[-1].replace('/', '')
-                    nome = ''
+            while True:
+                try:
+                    if 'guiadosquadrinhos' in url:
+                            nomeNaoTratado = url.split('=')[-1].replace('/', '')
+                            nome = ''
 
-                    for letra in nomeNaoTratado:
-                        if letra.isalnum() or letra == '.': nome += letra
+                            for letra in nomeNaoTratado:
+                                if letra.isalnum() or letra == '.': nome += letra
 
-                    path = os.getcwd() + '/capas_guia_dos_quadrinhos'
-                    if not os.path.exists(path): os.mkdir(path)
+                            path = os.getcwd() + '/capas_guia_dos_quadrinhos'
+                            if not os.path.exists(path): os.mkdir(path)
 
+                    elif 'messias' in url:
+                        nome = url.split('/')[-1]
+                        path = os.getcwd() + '/images'
+                        if not os.path.exists(path): os.mkdir(path)
+                    else: nome = str(randint(10**8, 10**9-1)) + '.jpg'
+                    self.urllib.request.urlretrieve(url, path + '/' + nome )
 
-            elif 'messias' in url:
-                nome = url.split('/')[-1]
-                path = os.getcwd() + '/images'
-                if not os.path.exists(path): os.mkdir(path)
-            else: nome = str(randint(10**8, 10**9-1)) + '.jpg'
-            self.urllib.request.urlretrieve(url, path + '/' + nome )
+                    break
+                except URLError: pass
+
 
 
 class Driver():
@@ -221,6 +227,11 @@ class Driver():
         counter = 0
         if district == 'livro': self.browser.get('https://sebodomessias.com.br/livros')
         elif district == 'HQ/Mangá': self.browser.get('https://sebodomessias.com.br/gibis')
+        else:
+            self.browser.get(district)
+            if 'Produto=5' in district: district = 'HQ/Mangá'
+            if 'Produto=1' in district: district = 'livro'
+
         db = BancoDeDadosMessias()
         sleep(0.5)
 
@@ -491,26 +502,24 @@ class Driver():
                 except ElementNotInteractableException: break
 
     def updateSeboMessiasNews(self) -> None:
-        pass
+        # self.getMessiasPages('https://sebodomessias.com.br/UltimosItens.aspx?cdTpProduto=1&Dias=1&cdTpCategoria=0')
+        self.getMessiasPages('https://sebodomessias.com.br/UltimosItens.aspx?cdTpProduto=5&Dias=1&cdTpCategoria=0')
+
 
 
 
 def main() -> None:
     global getAllPages
 
-    try:
-        if argv[1] == '-g':
-            Driver().acessarGuiaDosQuadrinhosPages()
-        elif argv[1] == '-s':
-            if getAllPages:
-                Driver().getMessiasPages('HQ/Mangá')
-                Driver().getMessiasPages('livro')
-                Driver().acessMessiasPages()
-                getAllPages = False
-            elif not getAllPages:
-                Driver().updateSeboMessiasNews()
-    except:
-        pass
+    if getAllPages:
+        getAllPages = False
+        Driver().getMessiasPages('HQ/Mangá')
+        Driver().getMessiasPages('livro')
+        Driver().acessMessiasPages()
+    elif not getAllPages:
+        Driver().updateSeboMessiasNews()
+        
+
 # def test() -> None:
 #     messiasDB = BancoDeDadosMessias()
     
@@ -524,8 +533,12 @@ def main() -> None:
 #     print(columns)
 
 if __name__ == '__main__':
-    schedule.every(2).hours.do(main)
     getAllPages = True
+
+    if '--ignore-books' in argv: ignoreBooks = True
+    if '--do-not-get-all'in argv: doNotgetAll = True
+
+    schedule.every(1).hours.do(main)
 
     while True:
         schedule.run_pending()
