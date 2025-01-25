@@ -3,15 +3,22 @@ import requests
 import telepot
 import sqlite3
 import schedule
-from sys import argv
-from datetime import datetime
-from bancodedados import *
-from random import randint
-from time import sleep
-from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException, TimeoutException
-from selenium.webdriver.common.by import By
-from tokens import *
+import asyncio
+from sys                            import argv
+from datetime                       import datetime
+from bancodedados                   import *
+from random                         import randint
+from time                           import sleep
+from selenium                       import webdriver
+from selenium.webdriver.common.by   import By
+from tokens                         import *
+from urllib.error import URLError
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    ElementNotInteractableException,
+    TimeoutException,
+    WebDriverException
+)
 
 class UtilsFunctions:
     def getStrTime() -> str:
@@ -25,16 +32,20 @@ class TelegramBot:
     def __init__(self) -> None:
         self.bot = telepot.Bot(TELEGRAM_TOKEN)
 
+
     def sendMessage(self, mensagem) -> None:
-        self.bot.sendMessage(CHAT_ID, mensagem)
+        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={mensagem}"
+        print(requests.get(url))
+        
 
     def sendPhoto(self, imagemLocal) -> None:
-        self.bot.sendPhoto(CHAT_ID, photo=open(f'./images/{imagemLocal}', 'rb'))
+        photo = open(f'./images/{imagemLocal}', 'rb')
+        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto?chat_id={CHAT_ID}"
+        print(requests.post(url, files={'photo': photo}))
 
 
 class DownloadImage():
     import urllib.request
-    from urllib.error import URLError
 
     def download(self, url, path=''):
         if url:
@@ -59,6 +70,7 @@ class DownloadImage():
 
                     break
                 except URLError: pass
+                except RemoteDisconnected: pass
 
 
 
@@ -67,7 +79,7 @@ class Driver():
         if os.name == 'nt': self.browser = webdriver.Firefox()
         else: self.browser = webdriver.Firefox()
 
-    def acessMessiasPages(self) -> None:
+    def accessMessiasPages(self) -> None:
         db = BancoDeDadosMessias()
         columns = db.cur.execute('SELECT link, checado FROM sebo_messias').fetchall()
 
@@ -79,11 +91,15 @@ class Driver():
     def scrapMessiasPage(self, link):
         db = BancoDeDadosMessias()
         district = db.cur.execute(f'SELECT distrito FROM sebo_messias WHERE link="{link}"').fetchone()[0]
-        livroTrackers = ['nanquim', 'darkside']#['susan sontag', 'craig thompson', 'isaac asimov', 'emily bront', 'george orwell', 'lewis carroll', 'h.g wells', 'saramago', 'frank herbert', 'verne', 'heinlein', 'kafka', 'darkside', 'nanquim', 'schopenheuer', 'bene barnosa', 'paulo coelho', 'cortela', 'kahneman', 'john milton', 'robert c', 'simon sinek', 'mitnick', 'alan lightman', 'feynman', 'philip k', 'ray bradbury', 'stephen hawking', 'carl sagan', 'david seltzer', 'bram stoker', 'lovecraft', 'edgar allan poe', 'mary shelley', 'ludvig von mises', 'milton friedman', 'bastiat', 'homero', 'john milton', 'johann wolfgang von', 'douglas adams', 'neil gaiman', 'bernard cornwell', 'anthony burgess', 'chuck palahniuk', 'pierre boulle', 'arthur c. clarke', 'richard dawkins', 'agatha christie', 'orleans', 'richard adams', 'stephen king']
+        livroTrackers = ['nanquim', 'darkside', 'susan sontag', 'isaac asimov', 'Ludwig von Mises', 'Milton FRIEDMAN', 'h.g wells', 'josé saramago', 'bene barnosa', 'paulo coelho', 'cortela', 'daniel kahneman', 'john milton', 'mitnick', 'alan lightman', 'richard p. feynman', 'philip k. dick', 'stephen hawking', 'carl sagan', 'ludvig von mises', 'milton friedman', 'bastiat', 'john milton', 'johann wolfgang von', 'bernard cornwell', 'richard dawkins', 'stephen king', 'Adam Smith', 'Frank Herbert', 'George R.R. Martin', 'Hayek', 'tropas estelares', 'Laranja Mecânica', 'Clube da luta', 'coraline', 'mitologia nórdica', 'Deuses Americanos', 'Planeta dos Macacos', 'A Profecia', 'Fahrenheit 451', 'Em busca de Watership Down', 'O labirinto do fauno', 'neuromancer']
         hqTrackers = ['dura', 'maus', 'habibi']
-        self.browser.get(link)
-        print('Acessando: ', link)
-        sleep(0.5)
+        while True:
+            try:
+                self.browser.get(link)
+                print('Acessando: ', link)
+                sleep(0.5)
+                break
+            except WebDriverException: pass
 
         try:
             capaURL = self.browser.find_element(By.ID, 'ctl00_cphMain_rptImage_ctl00_imgProduto').get_attribute('src')
@@ -210,18 +226,25 @@ class Driver():
         if 'hq' in district.lower():
             for tracker in hqTrackers:
                 for dado in dados:
-                    if tracker in dado.lower():
-                        mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nAssunto: {assunto}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço: {precoDesconto}\nStatus: {status}\nCuriosidades:{curiosidades}\nURL: {link}')
-                        TelegramBot().sendPhoto(capaLocal)
-                        TelegramBot().sendMessage(mensagem)
+                    if tracker.lower() in dado.lower():
+                        mensagem = f'Titulo: {titulo}%0Adistrict: {district}%0AAssunto: {assunto}%0AAutor: {autor}%0AEditora: {editora}%0AAno: {ano}%0AConservação Capa: {conservacaoCapa}%0AConservação Miolo: {conservacaoMiolo}%0AISBN: {isbn}%0AAcabamento: {acabamento}%0ATradutor: {tradutor}%0AIdioma: {idioma}%0AEdição: {edicao}%0ANúmero de Páginas: {numeroPaginas}%0AFormato: {formato}%0APreço: {precoDesconto}%0AStatus: {status}%0ACuriosidades:{curiosidades}%0AURL: {link}'
+                        #TelegramBot().sendPhoto(capaLocal)
+                        #TelegramBot().sendMessage(mensagem)
+                        print(mensagem)
+                        self.browser.get(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={mensagem.replace('&', 'e')}")
+    
+                        
+
         elif 'livro' in district.lower():
             for tracker in livroTrackers:
                 for dado in dados:
-                    if tracker in dado.lower():
+                    if tracker.lower() in dado.lower():
                         print(tracker, dado, dados)
-                        mensagem = (f'Titulo: {titulo}\ndistrict: {district}\nAssunto: {assunto}\nAutor: {autor}\nEditora: {editora}\nAno: {ano}\nConservação Capa: {conservacaoCapa}\nConservação Miolo: {conservacaoMiolo}\nISBN: {isbn}\nAcabamento: {acabamento}\nTradutor: {tradutor}\nIdioma: {idioma}\nEdição: {edicao}\nNúmero de Páginas: {numeroPaginas}\nFormato: {formato}\nPreço: {precoDesconto}\nStatus: {status}\nCuriosidades:{curiosidades}\nURL: {link}')
-                        TelegramBot().sendPhoto(capaLocal)
-                        TelegramBot().sendMessage(mensagem)
+                        mensagem = f'Titulo: {titulo}%0Adistrict: {district}%0AAssunto: {assunto}%0AAutor: {autor}%0AEditora: {editora}%0AAno: {ano}%0AConservação Capa: {conservacaoCapa}%0AConservação Miolo: {conservacaoMiolo}%0AISBN: {isbn}%0AAcabamento: {acabamento}%0ATradutor: {tradutor}%0AIdioma: {idioma}%0AEdição: {edicao}%0ANúmero de Páginas: {numeroPaginas}%0AFormato: {formato}%0APreço: {precoDesconto}%0AStatus: {status}%0ACuriosidades:{curiosidades}%0AURL: {link}'
+                        #TelegramBot().sendPhoto(capaLocal)
+                        # TelegramBot().sendMessage(mensagem)
+                        self.browser.get(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={mensagem}")
+                        
 
     def getMessiasPages(self, district):
         counter = 0
@@ -309,6 +332,8 @@ class Driver():
             except IndexError:
                 print('fim')
                 break
+            except TimeoutException: pass
+            except WebDriverException: pass
 
         self.browser.quit()
         db.cur.close()
@@ -340,7 +365,8 @@ class Driver():
                         for link in links:
                             numeroDestaEdicao += 1
                             print('===========================================================\n', site[0])
-                            self.scrapGuiaDosQuadrinhosPage(site[0], link, numeroDestaEdicao, site[5])
+                            try:    self.scrapGuiaDosQuadrinhosPage(site[0], link, numeroDestaEdicao, site[5])
+                            except: print('Error in ', link)
                         break
 
     def scrapGuiaDosQuadrinhosPage(self, linkPai='', link='', numeroDestaEdicao='', edicoesTotais='') -> None:
@@ -509,15 +535,18 @@ class Driver():
 
 
 def main() -> None:
+    #ver se dá pra passar como argumento essas variaveis
     global getAllPages
+    global accessPages
 
     if getAllPages:
         getAllPages = False
         Driver().getMessiasPages('HQ/Mangá')
         Driver().getMessiasPages('livro')
-        Driver().acessMessiasPages()
-    elif not getAllPages:
-        Driver().updateSeboMessiasNews()
+#    elif not getAllPages:
+#        Driver().updateSeboMessiasNews()
+        
+    if accessPages: Driver().accessMessiasPages()
         
 
 # def test() -> None:
@@ -533,12 +562,17 @@ def main() -> None:
 #     print(columns)
 
 if __name__ == '__main__':
-    getAllPages = True
+    ignoreBooks = False
+    getAllPages = False
+    ignoreBooks = False
+    accessPages = False
 
-    if '--ignore-books' in argv: ignoreBooks = True
-    if '--do-not-get-all'in argv: doNotgetAll = True
+    for option in argv:
+        if '--get-all-pages' in option: getAllPages = True
+        if '--ignore-books' in option: ignoreBooks = True
+        if '--access-pages' in option: accessPages = True
 
-    schedule.every(1).hours.do(main)
+    schedule.every(1).seconds.do(main)
 
     while True:
         schedule.run_pending()
