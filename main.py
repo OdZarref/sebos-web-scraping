@@ -76,8 +76,16 @@ class DownloadImage():
 
 class Driver():
     def __init__(self):
+        pass
+    
+    def initDriver(self):
         if os.name == 'nt': self.browser = webdriver.Firefox()
-        else: self.browser = webdriver.Firefox()
+        else:
+            if self.headless:
+                options = webdriver.FirefoxOptions()
+                options.add_argument("--headless")
+                self.browser = webdriver.Firefox(options)
+            else: self.browser = webdriver.Firefox()
 
     def accessMessiasPages(self) -> None:
         db = BancoDeDadosMessias()
@@ -245,7 +253,6 @@ class Driver():
                         # TelegramBot().sendMessage(mensagem)
                         self.browser.get(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={mensagem}")
                         
-
     def getMessiasPages(self, district):
         counter = 0
         if district == 'livro': self.browser.get('https://sebodomessias.com.br/livros')
@@ -539,21 +546,26 @@ def main() -> None:
 
     if getAllPages:
         getAllPages = False
-        Driver().getMessiasPages('HQ/Mangá')
-        Driver().getMessiasPages('livro')
+        driver = Driver()
+        driver.headless = headless
+        driver.initDriver()
+        driver.getMessiasPages('HQ/Mangá')
+        driver.getMessiasPages('livro')
         
-    if accessPages: Driver().accessMessiasPages()
+    if accessPages: driver.accessMessiasPages()
 
 if __name__ == '__main__':
     ignoreBooks = False
     getAllPages = False
     ignoreBooks = False
     accessPages = False
+    headless = False
 
     for option in argv:
         if '--get-all-pages' in option: getAllPages = True
         if '--ignore-books' in option: ignoreBooks = True
         if '--access-pages' in option: accessPages = True
+        if '--headless' in option: headless = True
 
     schedule.every(1).seconds.do(main)
 
