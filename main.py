@@ -20,6 +20,7 @@ from selenium.common.exceptions import (
     WebDriverException
 )
 
+
 class UtilsFunctions:
     def getStrTime() -> str:
         return datetime.now().isoformat()[0:-13]
@@ -71,7 +72,6 @@ class DownloadImage():
                     break
                 except URLError: pass
                 except RemoteDisconnected: pass
-
 
 
 class Driver():
@@ -532,8 +532,6 @@ class Driver():
         self.getMessiasPages('https://sebodomessias.com.br/UltimosItens.aspx?cdTpProduto=5&Dias=1&cdTpCategoria=0')
 
 
-
-
 def main() -> None:
     #ver se dá pra passar como argumento essas variaveis
     global getAllPages
@@ -543,23 +541,8 @@ def main() -> None:
         getAllPages = False
         Driver().getMessiasPages('HQ/Mangá')
         Driver().getMessiasPages('livro')
-#    elif not getAllPages:
-#        Driver().updateSeboMessiasNews()
         
     if accessPages: Driver().accessMessiasPages()
-        
-
-# def test() -> None:
-#     messiasDB = BancoDeDadosMessias()
-    
-#     columns = messiasDB.cur.execute("""
-#                                     SELECT
-#                                         * FROM sebo_messias
-#                                     WHERE
-#                                         titulo LIKE 'Crimson%' AND distrito='HQ/Mangá' AND ano='2002'""").fetchall()
-
-#     # for column in columns:
-#     print(columns)
 
 if __name__ == '__main__':
     ignoreBooks = False
