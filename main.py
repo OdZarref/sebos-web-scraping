@@ -104,7 +104,7 @@ class Driver():
         while True:
             try:
                 self.browser.get(link)
-                print('Acessando: ', link)
+                print(f'\r{" " * 200}\r{datetime.now()} | Acessando: {link}', end='')
                 sleep(0.5)
                 break
             except WebDriverException: pass
@@ -238,7 +238,7 @@ class Driver():
                         mensagem = f'Titulo: {titulo}%0Adistrict: {district}%0AAssunto: {assunto}%0AAutor: {autor}%0AEditora: {editora}%0AAno: {ano}%0AConservação Capa: {conservacaoCapa}%0AConservação Miolo: {conservacaoMiolo}%0AISBN: {isbn}%0AAcabamento: {acabamento}%0ATradutor: {tradutor}%0AIdioma: {idioma}%0AEdição: {edicao}%0ANúmero de Páginas: {numeroPaginas}%0AFormato: {formato}%0APreço: {precoDesconto}%0AStatus: {status}%0ACuriosidades:{curiosidades}%0AURL: {link}'
                         #TelegramBot().sendPhoto(capaLocal)
                         #TelegramBot().sendMessage(mensagem)
-                        print(mensagem)
+                        print(f'\r{datetime.now()} | {mensagem}', end='')
                         self.browser.get(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={mensagem.replace('&', 'e')}")
     
                         
@@ -247,7 +247,6 @@ class Driver():
             for tracker in livroTrackers:
                 for dado in dados:
                     if tracker.lower() in dado.lower():
-                        print(tracker, dado, dados)
                         mensagem = f'Titulo: {titulo}%0Adistrict: {district}%0AAssunto: {assunto}%0AAutor: {autor}%0AEditora: {editora}%0AAno: {ano}%0AConservação Capa: {conservacaoCapa}%0AConservação Miolo: {conservacaoMiolo}%0AISBN: {isbn}%0AAcabamento: {acabamento}%0ATradutor: {tradutor}%0AIdioma: {idioma}%0AEdição: {edicao}%0ANúmero de Páginas: {numeroPaginas}%0AFormato: {formato}%0APreço: {precoDesconto}%0AStatus: {status}%0ACuriosidades:{curiosidades}%0AURL: {link}'
                         #TelegramBot().sendPhoto(capaLocal)
                         # TelegramBot().sendMessage(mensagem)
@@ -287,7 +286,7 @@ class Driver():
                                         SET preco='R$ {price}'
                                         WHERE link='{link}'
                                         """)
-                        print(f'Preço Atualizado: {name}\nAntigo: {priceDB}\nNovo: {price}')
+                        print(f'\r{" " * 200}\r{datetime.now()} | Preço Atualizado: {name}\nAntigo: {priceDB}\nNovo: {price}', end='')
 
                     if not 'Null' in priceDB and not 'Null' in lowestPrice:
                             if float(price.replace('.', '').replace('R$ ', '').replace(',', '.')) < float(lowestPrice):
@@ -344,37 +343,6 @@ class Driver():
 
         self.browser.quit()
         db.cur.close()
-
-    def acessarGuiaDosQuadrinhosPages(self) -> None:
-        bd = BancoDeDadosBasicoGDQ()
-        res = bd.cur.execute('SELECT * FROM guia_basico')
-        linksPai = res.fetchall()
-        mandar = False
-
-        for site in linksPai:
-            if site[0] in 'http://www.guiadosquadrinhos.com/capas/thor-3-serie/th011134': mandar = True
-
-            if mandar:
-                while True:
-                    numeroDestaEdicao = 0
-                    self.browser.get(site[0])
-                    sleep(0.5)
-
-                    try: 
-                        self.browser.find_element(By.ID, 'error-information-popup-content')
-                    except NoSuchElementException:
-                        try:
-                            self.browser.find_element(By.XPATH, "//option[@value='120']").click()
-                            sleep(1)
-                        except NoSuchElementException: pass
-                        links = []
-                        for link in self.browser.find_elements(By.CLASS_NAME, 'suppress'): links.append(link.get_attribute('href'))
-                        for link in links:
-                            numeroDestaEdicao += 1
-                            print('===========================================================\n', site[0])
-                            try:    self.scrapGuiaDosQuadrinhosPage(site[0], link, numeroDestaEdicao, site[5])
-                            except: print('Error in ', link)
-                        break
 
     def updateSeboMessiasNews(self) -> None:
         # self.getMessiasPages('https://sebodomessias.com.br/UltimosItens.aspx?cdTpProduto=1&Dias=1&cdTpCategoria=0')
