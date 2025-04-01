@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from datetime import datetime
 
 class BancoDeDadosMessias():
     def __init__(self) -> None:
@@ -66,7 +67,7 @@ class BancoDeDadosMessias():
                             link,
                             checado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", dados)
         self.con.commit()
-        print(f'{dados[0]} adicionado.')
+        print(f'\r{" " * 200}\r{datetime.now()} | {dados[0]} adicionado.', end='')
 
     def update(self, dados):
         self.cur.execute(f"""
@@ -128,7 +129,7 @@ class BancoDeDadosBasicoGDQ():
         self.cur.execute("INSERT INTO guia_basico (link, titulo, editora, licenciador, periodo, nedicoes) VALUES (?, ?, ?, ?, ?, ?)", dados)
         self.con.commit()
         self.con.close()
-        print(f'{dados[1]} salvo')
+        print(f'\r{" " * 200}\r{datetime.now()} | {dados[1]} salvo', end='')
 
     def contarTotal(self) -> int:
         res = self.cur.execute('SELECT nedicoes FROM guia_basico')
@@ -197,7 +198,7 @@ class BancoDeDadosGDQ():
                          ''', dados)
         self.con.commit()
         self.con.close()
-        print(f'{dados[1]} salvo')
+        print(f'\r{" " * 200}\r{datetime.now()} | {dados[1]} salvo', end='')
 
 
 #verificar se a tabela foi criada
