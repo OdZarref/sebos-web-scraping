@@ -250,6 +250,7 @@ class Driver():
                         mensagem = f'Titulo: {titulo}%0Adistrict: {district}%0AAssunto: {assunto}%0AAutor: {autor}%0AEditora: {editora}%0AAno: {ano}%0AConservação Capa: {conservacaoCapa}%0AConservação Miolo: {conservacaoMiolo}%0AISBN: {isbn}%0AAcabamento: {acabamento}%0ATradutor: {tradutor}%0AIdioma: {idioma}%0AEdição: {edicao}%0ANúmero de Páginas: {numeroPaginas}%0AFormato: {formato}%0APreço: {precoDesconto}%0AStatus: {status}%0ACuriosidades:{curiosidades}%0AURL: {link}'
                         #TelegramBot().sendPhoto(capaLocal)
                         # TelegramBot().sendMessage(mensagem)
+                        print(f'\r{datetime.now()} | Mensagem enviada para {CHAT_ID}', end='')
                         self.browser.get(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={mensagem}")
                         
     def getMessiasPages(self, district):
