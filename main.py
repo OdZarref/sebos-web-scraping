@@ -406,7 +406,11 @@ def main() -> None:
         driver.getMessiasPages('livro')
         
         
-    if accessPages: driver.accessMessiasPages()
+    if accessPages:
+        driver = Driver()
+        driver.headless = headless
+        driver.initDriver()
+        driver.accessMessiasPages()
 
 if __name__ == '__main__':
     getAllPages = False
