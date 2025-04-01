@@ -385,27 +385,40 @@ def main() -> None:
     #ver se dá pra passar como argumento essas variaveis
     global getAllPages
     global accessPages
+    global getComics
+    global getBooks
 
     if getAllPages:
         getAllPages = False
+        getComics = True
+        getBooks = True
+        
+    if getComics:
         driver = Driver()
         driver.headless = headless
         driver.initDriver()
         driver.getMessiasPages('HQ/Mangá')
+        
+    if getBooks:
+        driver = Driver()
+        driver.headless = headless
+        driver.initDriver()
         driver.getMessiasPages('livro')
+        
         
     if accessPages: driver.accessMessiasPages()
 
 if __name__ == '__main__':
-    ignoreBooks = False
     getAllPages = False
-    ignoreBooks = False
+    getBooks = False
+    getComics = False
     accessPages = False
     headless = False
 
     for option in argv:
         if '--get-all-pages' in option: getAllPages = True
-        if '--ignore-books' in option: ignoreBooks = True
+        if '--get-comics' in option: getComics = True
+        if '--get-books' in option: getBooks = True
         if '--access-pages' in option: accessPages = True
         if '--headless' in option: headless = True
 
