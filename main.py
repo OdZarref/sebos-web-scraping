@@ -12,8 +12,8 @@ from time                           import sleep
 from selenium                       import webdriver
 from selenium.webdriver.common.by   import By
 from tokens                         import *
-from urllib.error import URLError
-from selenium.common.exceptions import (
+from urllib.error                   import URLError
+from selenium.common.exceptions     import (
     NoSuchElementException,
     ElementNotInteractableException,
     TimeoutException,
@@ -350,13 +350,7 @@ class Driver():
         self.getMessiasPages('https://sebodomessias.com.br/UltimosItens.aspx?cdTpProduto=5&Dias=1&cdTpCategoria=0')
 
 
-def main() -> None:
-    #ver se dá pra passar como argumento essas variaveis
-    global getAllPages
-    global accessPages
-    global getComics
-    global getBooks
-
+def main(getAllPages, getComics, getBooks, accessPages, headless) -> None:
     if getAllPages:
         getAllPages = False
         getComics = True
@@ -395,7 +389,5 @@ if __name__ == '__main__':
         if '--access-pages' in option: accessPages = True
         if '--headless' in option: headless = True
 
-    schedule.every(1).seconds.do(main)
-
-    while True:
-        schedule.run_pending()
+    try: main(getAllPages, getComics, getBooks, accessPages, headless)
+    except WebDriverException: pass
