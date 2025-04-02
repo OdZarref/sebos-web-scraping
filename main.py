@@ -350,44 +350,37 @@ class Driver():
         self.getMessiasPages('https://sebodomessias.com.br/UltimosItens.aspx?cdTpProduto=5&Dias=1&cdTpCategoria=0')
 
 
-def main(getAllPages, getComics, getBooks, accessPages, headless) -> None:
-    if getAllPages:
-        getAllPages = False
-        getComics = True
-        getBooks = True
-        
-    if getComics:
-        driver = Driver()
-        driver.headless = headless
-        driver.initDriver()
-        driver.getMessiasPages('HQ/Mangá')
-        
-    if getBooks:
-        driver = Driver()
-        driver.headless = headless
-        driver.initDriver()
-        driver.getMessiasPages('livro')
-        
-        
-    if accessPages:
-        driver = Driver()
-        driver.headless = headless
-        driver.initDriver()
-        driver.accessMessiasPages()
-
-if __name__ == '__main__':
-    getAllPages = False
-    getBooks = False
-    getComics = False
-    accessPages = False
+def mainSebo() -> None:
+    getBooks = True
+    getComics = True
+    accessPages = True
     headless = False
 
-    for option in argv:
-        if '--get-all-pages' in option: getAllPages = True
-        if '--get-comics' in option: getComics = True
-        if '--get-books' in option: getBooks = True
-        if '--access-pages' in option: accessPages = True
-        if '--headless' in option: headless = True
+    try:
+        if getComics:
+            driver = Driver()
+            driver.headless = headless
+            driver.initDriver()
+            driver.getMessiasPages('HQ/Mangá')
+            
+        if getBooks:
+            driver = Driver()
+            driver.headless = headless
+            driver.initDriver()
+            driver.getMessiasPages('livro')
+            
+            
+        if accessPages:
+            driver = Driver()
+            driver.headless = headless
+            driver.initDriver()
+            driver.accessMessiasPages()
+    except WebDriverException: driver.browser.quit()
 
-    try: main(getAllPages, getComics, getBooks, accessPages, headless)
-    except WebDriverException: pass
+if __name__ == '__main__':
+    schedule.every().day.at('12:00').do(mainSebo)
+    schedule.every().day.at('19:00').do(mainSebo)
+
+    while True:
+        schedule.run_pending()
+        
