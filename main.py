@@ -1,9 +1,10 @@
 import os
-import requests
-import telepot
 import sqlite3
 import schedule
 import asyncio
+from UtilsFunctions import UtilsFunctions
+from TelegramBot import TelegramBot
+from tokens                         import *
 from sys                            import argv
 from datetime                       import datetime
 from bancodedados                   import *
@@ -11,7 +12,6 @@ from random                         import randint
 from time                           import sleep
 from selenium                       import webdriver
 from selenium.webdriver.common.by   import By
-from tokens                         import *
 from urllib.error                   import URLError
 from selenium.common.exceptions     import (
     NoSuchElementException,
@@ -19,59 +19,6 @@ from selenium.common.exceptions     import (
     TimeoutException,
     WebDriverException
 )
-
-
-class UtilsFunctions:
-    def getStrTime() -> str:
-        return datetime.now().isoformat()[0:-13]
-
-    def randintID() -> str:
-        return str(randint(10 ** 8, 10 ** 9))
-
-
-class TelegramBot:
-    def __init__(self) -> None:
-        self.bot = telepot.Bot(TELEGRAM_TOKEN)
-
-
-    def sendMessage(self, mensagem) -> None:
-        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={mensagem}"
-        print(requests.get(url))
-        
-
-    def sendPhoto(self, imagemLocal) -> None:
-        photo = open(f'./images/{imagemLocal}', 'rb')
-        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto?chat_id={CHAT_ID}"
-        print(requests.post(url, files={'photo': photo}))
-
-
-class DownloadImage():
-    import urllib.request
-
-    def download(self, url, path=''):
-        if url:
-            while True:
-                try:
-                    if 'guiadosquadrinhos' in url:
-                            nomeNaoTratado = url.split('=')[-1].replace('/', '')
-                            nome = ''
-
-                            for letra in nomeNaoTratado:
-                                if letra.isalnum() or letra == '.': nome += letra
-
-                            path = os.getcwd() + '/capas_guia_dos_quadrinhos'
-                            if not os.path.exists(path): os.mkdir(path)
-
-                    elif 'messias' in url:
-                        nome = url.split('/')[-1]
-                        path = os.getcwd() + '/images'
-                        if not os.path.exists(path): os.mkdir(path)
-                    else: nome = str(randint(10**8, 10**9-1)) + '.jpg'
-                    self.urllib.request.urlretrieve(url, path + '/' + nome )
-
-                    break
-                except URLError: pass
-                except RemoteDisconnected: pass
 
 
 class Driver():
@@ -110,9 +57,7 @@ class Driver():
             except WebDriverException: pass
 
         try:
-            capaURL = self.browser.find_element(By.ID, 'ctl00_cphMain_rptImage_ctl00_imgProduto').get_attribute('src')
-            capaLocal = capaURL.split('/')[-1]
-            DownloadImage().download(capaURL, 'sebodomessias')
+            capaLocal = 'Null'
         except NoSuchElementException: capaLocal = 'Null'
 
         try:
@@ -287,7 +232,7 @@ class Driver():
                                         SET preco='R$ {price}'
                                         WHERE link='{link}'
                                         """)
-                        print(f'\r{" " * 200}\r{datetime.now()} | Preço Atualizado: {name}\nAntigo: {priceDB}\nNovo: {price}', end='')
+                        print(f'\r{" " * 200}\r{datetime.now()} | Preço Atualizado: {name} | Antigo: {priceDB} | Novo: {price}', end='')
 
                     if not 'Null' in priceDB and not 'Null' in lowestPrice:
                             if float(price.replace('.', '').replace('R$ ', '').replace(',', '.')) < float(lowestPrice):
@@ -378,9 +323,11 @@ def mainSebo() -> None:
     except WebDriverException: driver.browser.quit()
 
 if __name__ == '__main__':
-    schedule.every().day.at('12:00').do(mainSebo)
-    schedule.every().day.at('19:00').do(mainSebo)
+    # schedule.every().day.at('12:00').do(mainSebo)
+    # schedule.every().day.at('19:00').do(mainSebo)
 
-    while True:
-        schedule.run_pending()
+    # while True:
+    #     schedule.run_pending()
+    
+    mainSebo()
         
