@@ -323,11 +323,8 @@ def mainSebo() -> None:
     except WebDriverException: driver.browser.quit()
 
 if __name__ == '__main__':
-    # schedule.every().day.at('12:00').do(mainSebo)
-    # schedule.every().day.at('19:00').do(mainSebo)
+    schedule.every().day.at('12:00').do(mainSebo)
+    schedule.every().day.at('19:00').do(mainSebo)
 
-    # while True:
-    #     schedule.run_pending()
-    
-    mainSebo()
-        
+    while True:
+        schedule.run_pending()
