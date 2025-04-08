@@ -183,7 +183,6 @@ class Driver():
                         mensagem = f'Titulo: {titulo}%0Adistrict: {district}%0AAssunto: {assunto}%0AAutor: {autor}%0AEditora: {editora}%0AAno: {ano}%0AConservação Capa: {conservacaoCapa}%0AConservação Miolo: {conservacaoMiolo}%0AISBN: {isbn}%0AAcabamento: {acabamento}%0ATradutor: {tradutor}%0AIdioma: {idioma}%0AEdição: {edicao}%0ANúmero de Páginas: {numeroPaginas}%0AFormato: {formato}%0APreço: {precoDesconto}%0AStatus: {status}%0ACuriosidades:{curiosidades}%0AURL: {link}'
                         #TelegramBot().sendPhoto(capaLocal)
                         #TelegramBot().sendMessage(mensagem)
-                        print(f'\r{datetime.now()} | Mensagem enviada para {CHAT_ID}', end='')
                         self.browser.get(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={mensagem.replace('&', 'e')}")
     
                         
@@ -195,11 +194,13 @@ class Driver():
                         mensagem = f'Titulo: {titulo}%0Adistrict: {district}%0AAssunto: {assunto}%0AAutor: {autor}%0AEditora: {editora}%0AAno: {ano}%0AConservação Capa: {conservacaoCapa}%0AConservação Miolo: {conservacaoMiolo}%0AISBN: {isbn}%0AAcabamento: {acabamento}%0ATradutor: {tradutor}%0AIdioma: {idioma}%0AEdição: {edicao}%0ANúmero de Páginas: {numeroPaginas}%0AFormato: {formato}%0APreço: {precoDesconto}%0AStatus: {status}%0ACuriosidades:{curiosidades}%0AURL: {link}'
                         #TelegramBot().sendPhoto(capaLocal)
                         # TelegramBot().sendMessage(mensagem)
-                        print(f'\r{datetime.now()} | Mensagem enviada para {CHAT_ID}', end='')
                         self.browser.get(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={mensagem}")
                         
     def getMessiasPages(self, district):
         counter = 0
+        newItensCounter = 0
+        updatedItens = 0
+        UtilsFunctions.writeLog(f'{datetime.now()} | Iniciando busca')
         if district == 'livro': self.browser.get('https://sebodomessias.com.br/livros')
         elif district == 'HQ/Mangá': self.browser.get('https://sebodomessias.com.br/gibis')
         else:
@@ -216,14 +217,16 @@ class Driver():
             for item in itens:
                 name = item.find_element(By.CLASS_NAME, 'product-title').text.strip().replace('\n', '')
                 price = item.find_element(By.CLASS_NAME, 'price-new').text.strip().replace('\n', '')
-
+                
                 link = item.find_element(By.TAG_NAME, 'a').get_attribute('href')
                 data = UtilsFunctions.getStrTime()
 
                 if db.exists('link', link):
+                    updatedItens += 1
                     res = db.cur.execute(f"SELECT preco from sebo_messias WHERE link='{link}'")
                     priceDB = res.fetchone()[0]
                     res = db.cur.execute(f"SELECT menorPreco from sebo_messias WHERE link='{link}'")
+                    #replace('.', '') probably not necessary
                     lowestPrice = res.fetchone()[0].replace('.', '').replace('R$ ', '').replace(',', '.')
 
                     if price != priceDB:
@@ -232,9 +235,12 @@ class Driver():
                                         SET preco='R$ {price}'
                                         WHERE link='{link}'
                                         """)
-                        print(f'\r{" " * 200}\r{datetime.now()} | Preço Atualizado: {name} | Antigo: {priceDB} | Novo: {price}', end='')
+                        message = f'{datetime.now()} | Preço Atualizado: {name} | Antigo: {priceDB} | Novo: {price}'
+                        UtilsFunctions.writeLog(message)
+                        print(f'\r{" " * 200}{message}\r', end='')
 
                     if not 'Null' in priceDB and not 'Null' in lowestPrice:
+                            #replace('.', '') probably not necessary
                             if float(price.replace('.', '').replace('R$ ', '').replace(',', '.')) < float(lowestPrice):
                                 db.cur.execute(f"""
                                                 UPDATE sebo_messias
@@ -244,6 +250,7 @@ class Driver():
                     db.con.commit()
 
                 elif not db.exists('link', link):
+                    newItensCounter += 1
                     checado = '0'
                     varID = UtilsFunctions.randintID()
                     BancoDeDadosMessias().inserir((
@@ -278,15 +285,13 @@ class Driver():
                 counter += 1
                 sleep(0.5)
 
-                if previousURL == self.browser.current_url:
-                    break
+                if previousURL == self.browser.current_url: break
                 
-            except IndexError:
-                print('fim')
-                break
+            except IndexError: break
             except TimeoutException: pass
             except WebDriverException: pass
 
+        UtilsFunctions.writeLog(f'{datetime.now()} | Total de itens novos = {newItensCounter} | Total de itens atualizados = {updatedItens}')
         self.browser.quit()
         db.cur.close()
 
@@ -323,8 +328,11 @@ def mainSebo() -> None:
     except WebDriverException: driver.browser.quit()
 
 if __name__ == '__main__':
-    schedule.every().day.at('12:00').do(mainSebo)
-    schedule.every().day.at('19:00').do(mainSebo)
+    # schedule.every().day.at('12:00').do(mainSebo)
+    # schedule.every().day.at('19:00').do(mainSebo)
 
-    while True:
-        schedule.run_pending()
+    # while True:
+    #     schedule.run_pending()
+
+    mainSebo()
+    
