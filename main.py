@@ -68,6 +68,7 @@ class Driver():
         try:
             assunto = self.browser.find_element(By.ID, 'ctl00_cphMain_labelCategoriaTitulo').find_element(By.TAG_NAME, 'a').text
             if not assunto: assunto = self.browser.find_element(By.ID, 'ctl00_cphMain_lblCategoriaTitulo').find_element(By.TAG_NAME, 'a').text
+            if not assunto: assunto = 'Null'
         except NoSuchElementException: categoria = 'Null'
         
         try:
@@ -280,6 +281,9 @@ class Driver():
                                                  checado))
             try:
                 nextPageElement = self.browser.find_elements(By.CLASS_NAME, 'page-link')[-1]
+                nextPageMultipleOfTen = self.browser.find_elements(By.CLASS_NAME, 'page-link')[-2].get_attribute('href')
+                
+                print(nextPageMultipleOfTen.split('&')[5])
                 previousURL = self.browser.current_url
                 nextPageElement.click()
                 counter += 1
