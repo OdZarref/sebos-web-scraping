@@ -68,8 +68,7 @@ class Driver():
         try:
             assunto = self.browser.find_element(By.ID, 'ctl00_cphMain_labelCategoriaTitulo').find_element(By.TAG_NAME, 'a').text
             if not assunto: assunto = self.browser.find_element(By.ID, 'ctl00_cphMain_lblCategoriaTitulo').find_element(By.TAG_NAME, 'a').text
-            if not assunto: assunto = 'Null'
-        except NoSuchElementException: categoria = 'Null'
+        except NoSuchElementException: assunto = 'Null'
         
         try:
             autor = self.browser.find_element(By.CSS_SELECTOR, '[id*="lblAutor"]').text
